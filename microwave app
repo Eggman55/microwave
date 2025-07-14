@@ -1,0 +1,92 @@
+from tkinter import *
+import serial
+import time
+import threading
+
+
+try:
+    arduino = serial.Serial('COM3', 9600, timeout=1)
+except Exception as e:
+    print("Arduino connection failed:", e)
+    arduino = None
+
+
+def set_pulse():
+    pulse = pulse_entry.get()
+    if arduino:
+        try:
+            arduino.write(f'Pulse=,{pulse}\n'.encode())
+            print(f'Sent pulse: {pulse}')
+        except Exception as e:
+            print("Error sending pulse:", e)
+
+def set_delay():
+    delay = delay_entry.get()
+    if arduino:
+        try:
+            arduino.write(f'Delay=,{delay}\n'.encode())
+            print(f'Sent delay: {delay}')
+        except Exception as e:
+            print("Error sending delay:", e)
+
+def set_cycles():
+    cycles = cycles_entry.get()
+    if arduino:
+        try:
+            arduino.write(f'Cycles-,{cycles}\n'.encode())
+            print(f'Sent cycles: {cycles}')
+        except Exception as e:
+            print("Error sending cycles:", e)
+
+def start_microwave():
+    if arduino:
+        try:
+            arduino.write(b'1\n')
+            print('Microwave started')
+        except Exception as e:
+            print("Error starting microwave:", e)
+
+def hard_stop_microwave():
+    if arduino:
+        try:
+            arduino.write(b'0\n')
+            print('Microwave stopped')
+        except Exception as e:
+            print("Error stopping microwave:", e)
+
+root = Tk()
+root.title("Microwave Control App")
+root.geometry("800x600")
+
+if not arduino:
+    warning_box = Frame(root, bg="white", bd=3, relief="ridge", padx=20, pady=20)
+    warning_box.grid(row=5, column=1, sticky="n", padx=20, pady=20)  # Put it in column 3 (right side)
+    
+    Label(warning_box, text="⚠️ Arduino not connected", fg="red", font=("Arial", 24, "bold"), bg="white").pack()
+elif arduino:
+    success = Frame(root, bg="white", bd=3, relief="ridge", padx=20, pady=20)
+    success.grid(row=5, column=1, sticky="n", padx=20, pady=20)  # Put it in column 3 (right side)
+    
+    Label(success, text="✅ Arduino  connected", fg="green",font=("Arial", 24, "bold"), bg="white").pack()
+
+Label(root, text="Microwave Control", font=("Arial", 24, "bold")).grid(row=0, column=1, columnspan=2)
+
+pulseInput = Label(root, text="Pulse (ms):", font=("Arial", 14))
+pulseInput.grid(row=1, column=0, padx=10, pady=10, sticky="e")
+pulse_entry = Entry(root, font=("Arial", 14))
+pulse_entry.grid(row=1, column=1, padx=10, pady=10)
+pulse_entry.insert(0, "1000") 
+
+delayInput = Label(root, text="Delay (ms):", font=("Arial", 14))
+delayInput.grid(row=2, column=0, padx=10, pady=10,)
+delay_entry = Entry(root, font=("Arial", 14))
+delay_entry.grid(row=2, column=1, padx=10, pady=10)
+delay_entry.insert(0, "1000")
+
+Button(root, text="Set Pulse", command=set_pulse, font=("Arial", 14)).grid(row=1, column=2, padx=10, pady=10)
+Button(root, text="Set Delay", command=set_delay, font=("Arial", 14)).grid(row=2, column=2, padx=10, pady=10)
+
+Button(root, text="Start Microwave", command=start_microwave, font=("Arial", 14), bg="green", fg="white").grid(row=3, column=0, padx=10, pady=10)
+Button(root, text="Hard Stop", command=hard_stop_microwave, font=("Arial", 14), bg="red", fg="white").grid(row=3, column=1, padx=10, pady=10)
+
+root.mainloop()
