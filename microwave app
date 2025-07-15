@@ -2,72 +2,204 @@ from tkinter import *
 import serial
 import time
 import threading
+import json
 
+
+configsFile = 'configs.json'
+configs = {}
 
 try:
-    arduino = serial.Serial('COM3', 9600, timeout=1)
+        arduino = serial.Serial('COM3', 9600, timeout=1)
 except Exception as e:
-    print("Arduino connection failed:", e)
-    arduino = None
+        print("Arduino connection failed:", e)
+        arduino = None
 
 
 def set_pulse():
-    pulse = pulse_entry.get()
-    if arduino:
-        try:
-            arduino.write(f'Pulse=,{pulse}\n'.encode())
-            print(f'Sent pulse: {pulse}')
-        except Exception as e:
-            print("Error sending pulse:", e)
+        pulse = pulse_entry.get()
+        if arduino:
+            try:
+                arduino.write(f'Pulse=,{pulse}\n'.encode())
+                print(f'Sent pulse: {pulse}')
+            except Exception as e:
+                print("Error sending pulse:", e)
 
 def set_delay():
-    delay = delay_entry.get()
-    if arduino:
-        try:
-            arduino.write(f'Delay=,{delay}\n'.encode())
-            print(f'Sent delay: {delay}')
-        except Exception as e:
-            print("Error sending delay:", e)
+        delay = delay_entry.get()
+        if arduino:
+            try:
+                arduino.write(f'Delay=,{delay}\n'.encode())
+                print(f'Sent delay: {delay}')
+            except Exception as e:
+                print("Error sending delay:", e)
 
 def set_cycles():
-    cycles = cycles_entry.get()
-    if arduino:
-        try:
-            arduino.write(f'Cycles-,{cycles}\n'.encode())
-            print(f'Sent cycles: {cycles}')
-        except Exception as e:
-            print("Error sending cycles:", e)
+        cycles = cycles_entry.get()
+        if arduino:
+            try:
+                arduino.write(f'Cycles=,{cycles}\n'.encode())
+                print(f'Sent cycles: {cycles}')
+            except Exception as e:
+                print("Error sending cycles:", e)
 
 def start_microwave():
-    if arduino:
-        try:
-            arduino.write(b'1\n')
-            print('Microwave started')
-        except Exception as e:
-            print("Error starting microwave:", e)
+        if arduino:
+            try:
+                arduino.write(b'1\n')
+                print('Microwave started')
+            except Exception as e:
+                print("Error starting microwave:", e)
 
 def hard_stop_microwave():
-    if arduino:
-        try:
-            arduino.write(b'0\n')
-            print('Microwave stopped')
-        except Exception as e:
-            print("Error stopping microwave:", e)
+        if arduino:
+            try:
+                arduino.write(b'0\n')
+                print('Microwave stopped')
+            except Exception as e:
+                print("Error stopping microwave:", e)
 
+def microwave_on():
+        if arduino:
+            try:
+                arduino.write(b'2\n')
+                print('Microwave turned ON')
+            except Exception as e:
+                print("Error turning microwave ON:", e)
+
+def microwave_off():
+        if arduino:
+            try:
+                arduino.write(b'3\n')
+                print('Microwave turned OFF')
+            except Exception as e:
+                print("Error turning microwave OFF:", e)
+
+
+
+
+def open_settings_window():
+    config_win = Toplevel(root)
+    config_win.title("Configurations")
+    config_win.geometry("450x500")
+    config_win.configure(bg="white")
+
+    # Load config data from file
+    try:
+        with open(configsFile, 'r') as f:
+            recipes = json.load(f)
+    except:
+        recipes = {}
+
+    selected_config = StringVar(config_win)
+    selected_config.set("Select a recipe")
+
+    recipe_names = list(recipes.keys())
+    if not recipe_names:
+        recipe_names = ["No recipes saved"]
+
+    dropdown = OptionMenu(config_win, selected_config, *recipe_names)
+    dropdown.config(font=("Arial", 12))
+    dropdown.pack(pady=10)
+
+    # Config name
+    Label(config_win, text="Config Name:", font=("Arial", 14), bg="white").pack(pady=(10, 0))
+    sample_name_entry = Entry(config_win, font=("Arial", 14))
+    sample_name_entry.pack(pady=5)
+
+    # Pulses
+    Label(config_win, text="Pulses (ms):", font=("Arial", 12), bg="white").pack()
+    pulse_entry_config = Entry(config_win, font=("Arial", 12))
+    pulse_entry_config.pack()
+
+    # Delay
+    Label(config_win, text="Delay (ms):", font=("Arial", 12), bg="white").pack()
+    delay_entry_config = Entry(config_win, font=("Arial", 12))
+    delay_entry_config.pack()
+
+    # Cycles
+    Label(config_win, text="Cycles:", font=("Arial", 12), bg="white").pack(pady=(10, 0))
+    cycles_entry_config = Entry(config_win, font=("Arial", 12))
+    cycles_entry_config.pack()
+
+    def load_selected_recipe(*args):
+        name = selected_config.get()
+        if name in recipes:
+            data = recipes[name]
+            sample_name_entry.delete(0, END)
+            sample_name_entry.insert(0, name)
+
+            pulse_entry_config.delete(0, END)
+            pulse_entry_config.insert(0, data.get('pulse', ''))
+
+            delay_entry_config.delete(0, END)
+            delay_entry_config.insert(0, data.get('delay', ''))
+
+            cycles_entry_config.delete(0, END)
+            cycles_entry_config.insert(0, data.get('cycles', ''))
+        else:
+            sample_name_entry.delete(0, END)
+            pulse_entry_config.delete(0, END)
+            delay_entry_config.delete(0, END)
+            cycles_entry_config.delete(0, END)
+
+    # Trace dropdown changes
+    selected_config.trace_add("write", load_selected_recipe)
+    def save_recipe():
+        name = sample_name_entry.get().strip()
+        pulse = pulse_entry_config.get().strip()
+        delay = delay_entry_config.get().strip()
+        cycles = cycles_entry_config.get().strip()
+
+        if not name:
+            print("Config name cannot be empty")
+            return
+
+        recipes[name] = {
+            'pulse': pulse,
+            'delay': delay,
+            'cycles': cycles
+        }
+
+        with open(configsFile, 'w') as f:
+            json.dump(recipes, f, indent=4)
+
+        print(f"Recipe '{name}' saved successfully!")
+        selected_config.set(name)
+        dropdown['menu'].add_command(label=name, command=lambda value=name: selected_config.set(value))
+    Button(config_win, text="Save Recipe", font=("Arial", 14), command=save_recipe).pack(pady=20)
+
+    def push_recipe():
+        pulse = pulse_entry_config.get().strip()
+        delay = delay_entry_config.get().strip()
+        cycles = cycles_entry_config.get().strip()
+
+        # Push values to the main window inputs
+        pulse_entry.delete(0, END)
+        pulse_entry.insert(0, pulse)
+
+        delay_entry.delete(0, END)
+        delay_entry.insert(0, delay)
+
+        cycles_entry.delete(0, END)
+        cycles_entry.insert(0, cycles)
+
+    print("Recipe pushed to main window.")
+
+    Button(config_win, text="Push Recipe", font=("Arial", 14), command=push_recipe).pack(pady=10)
 root = Tk()
 root.title("Microwave Control App")
 root.geometry("800x600")
 
 if not arduino:
-    warning_box = Frame(root, bg="white", bd=3, relief="ridge", padx=20, pady=20)
-    warning_box.grid(row=5, column=1, sticky="n", padx=20, pady=20)  # Put it in column 3 (right side)
-    
-    Label(warning_box, text="⚠️ Arduino not connected", fg="red", font=("Arial", 24, "bold"), bg="white").pack()
+        warning_box = Frame(root, bg="white", bd=3, relief="ridge", padx=10, pady=10)
+        warning_box.grid(row=1, column=6, sticky="n", padx=20, pady=20)  # Put it in column 3 (right side)
+        
+        Label(warning_box, text="⚠️ Arduino not connected", fg="red", font=("Arial", 12, "bold"), bg="white").pack()
 elif arduino:
-    success = Frame(root, bg="white", bd=3, relief="ridge", padx=20, pady=20)
-    success.grid(row=5, column=1, sticky="n", padx=20, pady=20)  # Put it in column 3 (right side)
-    
-    Label(success, text="✅ Arduino  connected", fg="green",font=("Arial", 24, "bold"), bg="white").pack()
+        success = Frame(root, bg="white", bd=3, relief="ridge", padx=20, pady=20)
+        success.grid(row=6, column=1, sticky="n", padx=20, pady=20)  # Put it in column 3 (right side)
+        
+        Label(success, text="✅ Arduino  connected", fg="green",font=("Arial", 12, "bold"), bg="white").pack()
 
 Label(root, text="Microwave Control", font=("Arial", 24, "bold")).grid(row=0, column=1, columnspan=2)
 
@@ -83,10 +215,22 @@ delay_entry = Entry(root, font=("Arial", 14))
 delay_entry.grid(row=2, column=1, padx=10, pady=10)
 delay_entry.insert(0, "1000")
 
+cyclesInput = Label(root, text="Cycles:", font=("Arial", 14))
+cyclesInput.grid(row=3, column=0, padx=10, pady=10)
+cycles_entry = Entry(root, font=("Arial", 14))
+cycles_entry.grid(row=3, column=1, padx=10, pady=10)
+cycles_entry.insert(0, "1000")
+
 Button(root, text="Set Pulse", command=set_pulse, font=("Arial", 14)).grid(row=1, column=2, padx=10, pady=10)
 Button(root, text="Set Delay", command=set_delay, font=("Arial", 14)).grid(row=2, column=2, padx=10, pady=10)
+Button(root, text="Set Cycles", command=set_cycles, font=("Arial", 14)).grid(row=3, column=2, padx=10, pady=10)
 
-Button(root, text="Start Microwave", command=start_microwave, font=("Arial", 14), bg="green", fg="white").grid(row=3, column=0, padx=10, pady=10)
-Button(root, text="Hard Stop", command=hard_stop_microwave, font=("Arial", 14), bg="red", fg="white").grid(row=3, column=1, padx=10, pady=10)
+Button(root, text="Start pulses", command=start_microwave, font=("Arial", 14), bg="green", fg="white").grid(row=4, column=0, padx=10, pady=10)
+Button(root, text="Stop procedure", command=hard_stop_microwave, font=("Arial", 14), bg="red", fg="white").grid(row=4, column=1, padx=10, pady=10)
+
+Button(root, text="microwave on", command=microwave_on, font=("Arial", 14), bg="purple", fg="white").grid(row=6, column=0, padx=10, pady=10)
+Button(root, text="microwave off", command=microwave_off, font=("Arial", 14), bg="orange", fg="white").grid(row=7, column=0, padx=10, pady=10)
+
+Button(root, text="Settings", command=open_settings_window, font=("Arial", 14), bg="blue", fg="white").grid(row=5, column=1, padx=10, pady=10)
 
 root.mainloop()
