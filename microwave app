@@ -9,7 +9,7 @@ configsFile = 'configs.json'
 configs = {}
 
 try:
-        arduino = serial.Serial('COM3', 9600, timeout=1)
+        arduino = serial.Serial('COM5', 9600, timeout=1)
 except Exception as e:
         print("Arduino connection failed:", e)
         arduino = None
@@ -19,7 +19,7 @@ def set_pulse():
         pulse = pulse_entry.get()
         if arduino:
             try:
-                arduino.write(f'Pulse=,{pulse}\n'.encode())
+                arduino.write(f'Pulse={pulse}\n'.encode())
                 print(f'Sent pulse: {pulse}')
             except Exception as e:
                 print("Error sending pulse:", e)
@@ -28,7 +28,7 @@ def set_delay():
         delay = delay_entry.get()
         if arduino:
             try:
-                arduino.write(f'Delay=,{delay}\n'.encode())
+                arduino.write(f'Delay={delay}\n'.encode())
                 print(f'Sent delay: {delay}')
             except Exception as e:
                 print("Error sending delay:", e)
@@ -37,7 +37,7 @@ def set_cycles():
         cycles = cycles_entry.get()
         if arduino:
             try:
-                arduino.write(f'Cycles=,{cycles}\n'.encode())
+                arduino.write(f'Cycles={cycles}\n'.encode())
                 print(f'Sent cycles: {cycles}')
             except Exception as e:
                 print("Error sending cycles:", e)
