@@ -149,21 +149,21 @@ void checkCommand(String cmd) {
     return;
   }
 
-  if (cmd.startsWith("Pulse=,")) {
+  if (cmd.startsWith("Pulse=")) {
     uWave_PULSE = cmd.substring(7).toInt();
     Serial.print("Pulse set to ");
     Serial.println(uWave_PULSE);
     return;
   }
 
-  if (cmd.startsWith("Delay=,")) {
+  if (cmd.startsWith("Delay=")) {
     uWave_WAIT = cmd.substring(7).toInt();
     Serial.print("Delay set to ");
     Serial.println(uWave_WAIT);
     return;
   }
 
-  if (cmd.startsWith("Cycles=,")) {
+  if (cmd.startsWith("Cycles=")) {
     Num_Cycles = cmd.substring(8).toInt();
     Serial.print("Cycles set to ");
     Serial.println(Num_Cycles);
